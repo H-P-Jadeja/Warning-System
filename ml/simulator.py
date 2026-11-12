@@ -80,6 +80,9 @@ def simulate_episode(scenario: str = "glof", seed: int = 0, hours: int = 240) ->
 
     A GLOF episode includes the outburst hour as its final row. Its event type
     is selected reproducibly from rain, seepage/piping, and seismic/landslide.
+    Seismic/landslide episodes include a weak seismic, tilt, and water-level
+    precursor beginning about 48 hours before the event, followed by the
+    stronger sudden seismic and hydrological trigger.
     Labels are 0 before the 48-hour warning window, 1 below 48 hours, 2 below
     24 hours, and 3 below 12 hours to the event.
     """
