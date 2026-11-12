@@ -121,7 +121,13 @@ def simulate_episode(scenario: str = "glof", seed: int = 0, hours: int = 240) ->
             df["inflow_rate"] += 4.5 * ramp
             df["lake_area_km2"] += 0.10 * ramp
         else:
-            # A relatively sudden trigger followed by a fast hydrological rise.
+            # Weak, gradual precursor from 48h to 12h before the event.
+            precursor_ramp = np.clip((48.0 - remaining) / 36.0, 0, 1)
+            df["seismic_activity"] += 0.04 * precursor_ramp
+            df["dam_tilt_deg"] += 0.12 * precursor_ramp
+            df["water_level_m"] += 0.30 * precursor_ramp
+
+            # A much stronger sudden trigger followed by a fast water rise.
             trigger = (t >= event_hour - 10).astype(float)
             df["seismic_activity"] += 0.22 * trigger * rng.uniform(0.65, 1.0, hours)
             fast_rise = np.clip((t - (event_hour - 8)) / 8.0, 0, 1)
