@@ -1,4 +1,7 @@
 .DS_Store
+__MACOSX/
+*.zip
+.ipynb_checkpoints/
 .venv/
 __pycache__/
 *.py[cod]
