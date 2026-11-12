@@ -31,7 +31,7 @@ except ImportError:  # pragma: no cover - exercised by direct script invocation.
 
 LEVELS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 FEATURES = SENSOR_COLUMNS + ["water_level_d6", "seepage_d6", "tilt_d6"]
-DEFAULT_EPISODES = 100
+DEFAULT_EPISODES = 300
 DEFAULT_SEED = 42
 DEFAULT_TEST_SIZE = 0.20
 MODEL_PATH = Path(__file__).resolve().parent / "model.pkl"
