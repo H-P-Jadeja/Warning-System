@@ -217,3 +217,31 @@ Run the repository checks from the root directory:
 ```bash
 bash check_all.sh
 ```
+## Dashboard and alerts
+
+Run from the project root (Python 3.11+):
+```bash
+python3 -m venv venv
+source venv/bin/activate
+python -m pip install -r requirements.txt
+streamlit run app/dashboard.py
+```
+The dashboard has five pages: Overview (map and current level), Live Monitor
+(scenario, seed, play button, sensor charts, risk timeline, key drivers, lead time),
+Lake Growth, Alerts Log, Model Performance.
+
+## Alert levels
+| Level | Colour | Action |
+|---|---|---|
+| LOW | Green | Normal monitoring |
+| MEDIUM | Yellow | Increase monitoring, notify control room |
+| HIGH | Orange | Alert authorities, prepare evacuation of downstream villages |
+| CRITICAL | Red | Evacuate immediately, notify all downstream settlements and infrastructure |
+
+An alert is raised only when the level increases (and every 12 hours while HIGH or CRITICAL).
+All alerts are stored in `app/alerts.db` and shown on the Alerts Log page.
+
+## Data honesty
+- Sensor data is **simulated**, because real labelled GLOF sensor data is extremely scarce.
+- Lake-area values are **approximate published observations** (NRSC/ISRO, Planet Labs),
+  not Sentinel-2 NDWI computed by this project.
