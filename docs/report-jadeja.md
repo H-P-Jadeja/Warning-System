@@ -111,9 +111,9 @@ Sending an alert every hour would cause alert fatigue. The rule implemented in `
 4. if the level falls, the memory is reset so that a later escalation raises a new alert.
 
 ### 4.3 Alert content and storage
-Each alert message contains the level and colour, lake, time, risk score, key drivers, estimated lead time and the recommended action. Every alert is stored in a SQLite database (`app/alerts.db`) and shown on the Alerts Log page. The alert text can be delivered through [PLACEHOLDER: state exactly which channels you demonstrated, for example Telegram, email or push notification]. The code supports Telegram through the Bot API; channels that are not configured are skipped and reported as "preview only".
+Each alert message contains the level and colour, lake, time, risk score, key drivers, estimated lead time and the recommended action. Every alert is stored in a SQLite database (`app/alerts.db`) and shown on the Alerts Log page. The alert text can be delivered through ntfy app. The code supports Telegram through the Bot API; channels that are not configured are skipped and reported as "preview only".
 
-[PLACEHOLDER: insert screenshot of an alert message on a phone, if available]
+![Notification](screenshots/notification.png)
 
 ---
 
@@ -121,7 +121,7 @@ Each alert message contains the level and colour, lake, time, risk score, key dr
 
 The prototype runs on a single machine. For a real deployment:
 
-- **Sensors:** field sensors at the lake would send readings to a gateway. The optional REST API (`POST /predict`) is designed as this integration point. [PLACEHOLDER: keep this sentence only if you built `app/api.py`.]
+- **Sensors:** field sensors at the lake would send readings to a gateway. The optional REST API (`POST /predict`) is designed as this integration point.
 - **Multiple lakes:** every reading carries a `lake_id`, so additional lakes can be added by monitoring each identifier separately.
 - **Hosting:** the dashboard can be hosted on a central server for the control room, and the alert log moved from SQLite to a server database.
 - **Connectivity:** remote lakes often have poor connectivity. Edge processing at the lake and satellite or radio links would be needed. This is future work.
@@ -138,8 +138,6 @@ A full deployment would map the following exposed elements along the valley and 
 - roads and bridges;
 - hydropower projects;
 - defence assets and border infrastructure.
-
-[PLACEHOLDER: add real names and locations only from published sources. The prototype only marks two points (the lake and Chungthang) and does not include a flood-routing model.]
 
 ---
 
