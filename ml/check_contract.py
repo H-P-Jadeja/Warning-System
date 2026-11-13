@@ -3,6 +3,7 @@
 Run from the repository root with::
 
     python -m ml.check_contract
+    python -m ml.check_contract --stub
 
 This script does not train or modify the model. It exits with status 1 if any
 contract check fails.
@@ -20,7 +21,6 @@ from typing import Any, Callable
 import numpy as np
 import pandas as pd
 
-from ml.predict import predict_risk
 from ml.simulator import simulate_episode
 
 
@@ -137,7 +137,22 @@ def _run_case(name: str, check: Callable[[], None]) -> bool:
     return True
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Check the risk prediction interface")
+    parser.add_argument(
+        "--stub",
+        action="store_true",
+        help="run applicable contract cases against the threshold dashboard stub",
+    )
+    args = parser.parse_args(argv)
+
+    if args.stub:
+        from ml.predict_stub import predict_risk
+    else:
+        from ml.predict import predict_risk
+
     _print_sklearn_version()
 
     normal_episode = simulate_episode("normal", seed=3)
@@ -185,7 +200,7 @@ def main() -> int:
             return
         raise AssertionError("non-numeric sensor value did not raise ValueError")
 
-    def case_8() -> None:
+    def case_8_glof_monotonic() -> None:
         glof_episode = simulate_episode("glof", seed=11)
         early_indices = glof_episode.index[glof_episode["label"] == 0]
         middle_indices = glof_episode.index[glof_episode["label"] == 1]
@@ -215,6 +230,7 @@ def main() -> int:
             f"mid-warning score was {middle_score:.2f}"
         )
 
+    def case_8_normal_low() -> None:
         normal_middle_index = len(normal_episode) // 2
         normal_result = predict_risk(
             _reading_from_row(normal_episode.iloc[normal_middle_index]),
@@ -224,12 +240,16 @@ def main() -> int:
             f"normal middle-row risk level was {normal_result['risk_level']}"
         )
 
+    def case_8() -> None:
+        case_8_glof_monotonic()
+        case_8_normal_low()
+
     def case_9() -> None:
         first = predict_risk(base_reading, history=history_12)
         second = predict_risk(base_reading, history=history_12)
         assert first == second, "identical calls returned different values"
 
-    cases = [
+    common_cases = [
         ("normal reading without history returns contract fields and types", case_1),
         ("12-row list history", case_2),
         ("pandas DataFrame history", case_3),
@@ -237,13 +257,30 @@ def main() -> int:
         ("None and NaN sensor values", case_5),
         ("missing required field raises ValueError", case_6),
         ("non-numeric sensor value raises ValueError", case_7),
-        ("GLOF risk rises and normal middle row stays LOW", case_8),
-        ("deterministic repeated prediction", case_9),
     ]
+    if args.stub:
+        print(
+            "SKIP: GLOF monotonic episode check (threshold stub has no trained "
+            "model; this model-behavior check is not applicable)."
+        )
+        cases = common_cases + [
+            ("normal middle row stays LOW", case_8_normal_low),
+            ("deterministic repeated prediction", case_9),
+        ]
+        skipped = 1
+    else:
+        cases = common_cases + [
+            ("GLOF risk rises and normal middle row stays LOW", case_8),
+            ("deterministic repeated prediction", case_9),
+        ]
+        skipped = 0
 
     passed = sum(_run_case(name, check) for name, check in cases)
     failed = len(cases) - passed
-    print(f"Summary: {passed} passed, {failed} failed")
+    if args.stub:
+        print(f"Summary: {passed} passed, {failed} failed, {skipped} skipped")
+    else:
+        print(f"Summary: {passed} passed, {failed} failed")
     return 1 if failed else 0
 
 

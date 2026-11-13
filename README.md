@@ -25,6 +25,7 @@ These are the project objectives from the handbook. The simulator and initial mo
 ### Implemented
 
 - `ml/simulator.py` generates seeded, hourly synthetic sensor data for `glof` and `normal` scenarios.
+- Each simulator row exposes an `event_type` column: `rain`, `seepage`, or `seismic` for GLOF episodes, and `None` for normal episodes.
 - GLOF episodes select a rain/inflow, seepage/piping, or seismic/landslide precursor pattern.
 - Seismic/landslide episodes include a weak, gradual seismic, tilt, and water-level precursor before the stronger simulated trigger.
 - Sensor readings include water level, seepage, dam tilt, inflow, seismic activity, rainfall, water temperature, and lake area.
@@ -33,14 +34,18 @@ These are the project objectives from the handbook. The simulator and initial mo
 - `ml/train.py` trains a `GradientBoostingClassifier` on 300 generated episodes using a stratified 80/20 split by episode (240 training episodes and 60 held-out episodes).
 - Missing feature values are median-imputed using training data. The joblib bundle in `ml/model.pkl` contains the fitted classifier and imputer, ordered features, normal-data means and standard deviations, and held-out classification metrics.
 - `ml/predict.py` implements `predict_risk(reading, history=None)`, returning a 0–100 risk score, risk level, level index, top three factors, and estimated lead time.
+- `ml/predict_stub.py` provides a fake, threshold-based stand-in for dashboard development. Its outputs are **not model predictions**; the dashboard should switch to `from ml.predict import predict_risk` for real model results.
+- `ml/check_contract.py` checks the prediction interface against contract cases using either the trained model or the dashboard stub.
+- `ml/evaluate.py` evaluates the saved model on the reproducible held-out split and writes metrics, plots, event-type metrics, warning timing, and false-alarm summaries to `ml/results/`.
+- Evaluation artifacts: `metrics.json`, `confusion_matrix.png`, `feature_importance.png`, `per_event_type_recall.csv`, `warning_timing.csv`, and `false_alarms.json`.
 - `estimated_lead_time_hrs` is a fixed per-level approximation: LOW = `None`, MEDIUM = 36, HIGH = 18, CRITICAL = 6 hours. It is not separately predicted by the model.
 - Project directories are reserved for the data, application, documentation, and model-result components described in the handbook.
 
 ### Planned
 
-- Comparison against additional model types, expanded evaluation, anomaly detection, robustness analysis, and evaluation plots.
+- Comparison against additional model types, anomaly detection, and noise robustness analysis.
 - South Lhonak lake-area series and documented Sentinel-2 NDWI method (or clearly cited approximate data if satellite processing is not feasible).
-- Contract checks, evaluation plots, and Member A's ML report and usage documentation.
+- Member A's ML report and usage documentation.
 - Streamlit dashboard, alert logging and Telegram integration, architecture diagram, final merged report, and presentation. These are application-layer deliverables assigned to Member B in the handbook.
 - End-to-end integration and submission packaging.
 
@@ -53,6 +58,7 @@ These are the project objectives from the handbook. The simulator and initial mo
 - pandas
 - scikit-learn
 - joblib
+- matplotlib
 
 ### Planned by the project handbook
 
@@ -91,10 +97,19 @@ Warning-System/
     ├── train.py            # Implemented 300-episode training and evaluation
     ├── model.pkl           # Trained synthetic-data model bundle
     ├── predict.py          # Implemented risk prediction interface
-    └── results/            # Reserved for metrics and evaluation figures
+    ├── predict_stub.py     # Fake threshold-based stand-in for dashboard development
+    ├── check_contract.py   # Contract checks for real and stub predictors
+    ├── evaluate.py         # Saved-model evaluation and artifact generation
+    └── results/
+        ├── metrics.json
+        ├── confusion_matrix.png
+        ├── feature_importance.png
+        ├── per_event_type_recall.csv
+        ├── warning_timing.csv
+        └── false_alarms.json
 ```
 
-The folders `app/`, `data/`, `docs/`, and `ml/results/` are placeholders, not evidence that their planned deliverables exist. The handbook's reference `app.py` was provided separately in the Downloads folder and is not part of this repository. Its instructions say to treat it as a frozen reference rather than edit it.
+The folders `app/`, `data/`, and `docs/` are placeholders for remaining project work. The `ml/results/` directory contains evaluation artifacts generated from synthetic data. The handbook's reference `app.py` was provided separately in the Downloads folder and is not part of this repository. Its instructions say to treat it as a frozen reference rather than edit it.
 
 ## Setup
 
@@ -112,6 +127,12 @@ To retrain the model using the default 300 simulated episodes:
 
 ```bash
 python -m ml.train
+```
+
+To evaluate the saved model and regenerate the files in `ml/results/`:
+
+```bash
+python -m ml.evaluate
 ```
 
 Generate a single episode or a multi-episode dataset from Python:
@@ -159,6 +180,30 @@ result_with_history = predict_risk(reading, history=history)
 
 The returned `estimated_lead_time_hrs` uses fixed per-level approximations (MEDIUM 36, HIGH 18, CRITICAL 6, LOW `None`); it is not a separately predicted value.
 
+## Evaluation results (synthetic data)
+
+- Split: 240 training and 60 held-out episodes (50,874 training rows and 12,371 test rows).
+- Per-class precision / recall: LOW 0.977 / 0.994; MEDIUM 0.836 / 0.593; HIGH 0.805 / 0.836; CRITICAL 0.953 / 0.950.
+- Macro precision / recall / F1: 0.892 / 0.843 / 0.863.
+- MEDIUM recall by GLOF event type: rain 0.921, seepage 0.968, seismic 0.066.
+- Normal rows predicted above LOW: 21 / 7,200 (0.29%).
+- Held-out GLOF episodes never warned: 0 / 30.
+
+These are results on synthetic data and are not evidence of real-world performance.
+
+### Limitations
+
+Seismic MEDIUM recall is very low because the simulated seismic trigger occurs only about 10 hours before the event and the earlier precursor is weak. Seismic warnings were late by about 12–26 hours in 9 of 12 held-out seismic episodes. Some first-warning flags come from single-row blips, so a downstream alert rule should require persistence over consecutive hours. All results are on synthetic data and are not real-world performance.
+
+## Checking the interface
+
+Run the contract checks from the repository root. The default command checks the real model-backed predictor; `--stub` checks the threshold-based dashboard stand-in. The stub run skips the model-specific GLOF monotonicity check because the stub is not a trained model.
+
+```bash
+python -m ml.check_contract
+python -m ml.check_contract --stub
+```
+
 `scenario` must be `"glof"` or `"normal"`; `hours` must be at least 72. The generator is seeded for repeatable output. A GLOF episode ends at its simulated outburst hour and can therefore be shorter than the requested `hours`. For normal episodes, `hours_to_event` is `NaN`. Normal sensor data may contain sparse missing values and spikes by design; downstream model code will need an explicit handling policy.
 
 ## Current progress
@@ -166,19 +211,23 @@ The returned `estimated_lead_time_hrs` uses fixed per-level approximations (MEDI
 **Implemented**
 
 - Sensor simulator: `ml/simulator.py`.
+- Simulator exposes `event_type` (`rain`, `seepage`, `seismic`, or `None` for normal episodes).
 - Weak seismic/landslide precursor added to the simulator.
 - Multi-episode dataset helper: `make_dataset()` in `ml/simulator.py`.
 - Gradient Boosting training pipeline and saved model: `ml/train.py` and `ml/model.pkl`.
 - Training uses 300 simulated episodes with an episode-wise, stratified 80/20 split; held-out episode metrics are stored in the model bundle and printed during training.
 - Risk prediction interface: `predict_risk()` in `ml/predict.py`.
+- Dashboard-development stub: `ml/predict_stub.py` (threshold-based fake; its outputs are not model predictions).
+- Contract checker for the real predictor and stub: `ml/check_contract.py`.
+- Saved-model evaluation and six generated artifacts: `ml/evaluate.py` and `ml/results/`.
 - Fixed estimated lead-time mapping by risk level; it is not an independent model output.
 
 **Planned; not present yet**
 
-- Additional model comparison, anomaly detection, noise robustness analysis, and report figures.
+- Additional model comparison, anomaly detection, and noise robustness analysis.
 - Satellite lake-area data and extraction script.
 - Dashboard and alerts; `app/` is currently a placeholder.
-- Reports, figures, and presentation; `docs/` and `ml/results/` are currently placeholders.
+- Reports and presentation; `docs/` is currently a placeholder.
 
 Evaluation is based only on held-out synthetic episodes. It is not evidence of real-world GLOF prediction performance, warning lead time, or real satellite measurements.
 
