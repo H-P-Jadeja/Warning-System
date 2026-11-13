@@ -33,6 +33,8 @@ These are the project objectives from the handbook. The simulator and initial mo
 - `ml/train.py` trains a `GradientBoostingClassifier` on 300 generated episodes using a stratified 80/20 split by episode (240 training episodes and 60 held-out episodes).
 - Missing feature values are median-imputed using training data. The joblib bundle in `ml/model.pkl` contains the fitted classifier and imputer, ordered features, normal-data means and standard deviations, and held-out classification metrics.
 - `ml/predict.py` implements `predict_risk(reading, history=None)`, returning a 0–100 risk score, risk level, level index, top three factors, and estimated lead time.
+- `ml/predict_stub.py` provides a fake, threshold-based stand-in for dashboard development. Its outputs are **not model predictions**; the dashboard should switch to `from ml.predict import predict_risk` for real model results.
+- `ml/check_contract.py` checks the prediction interface against contract cases using either the trained model or the dashboard stub.
 - `estimated_lead_time_hrs` is a fixed per-level approximation: LOW = `None`, MEDIUM = 36, HIGH = 18, CRITICAL = 6 hours. It is not separately predicted by the model.
 - Project directories are reserved for the data, application, documentation, and model-result components described in the handbook.
 
@@ -91,6 +93,8 @@ Warning-System/
     ├── train.py            # Implemented 300-episode training and evaluation
     ├── model.pkl           # Trained synthetic-data model bundle
     ├── predict.py          # Implemented risk prediction interface
+    ├── predict_stub.py     # Fake threshold-based stand-in for dashboard development
+    ├── check_contract.py   # Contract checks for real and stub predictors
     └── results/            # Reserved for metrics and evaluation figures
 ```
 
@@ -159,6 +163,15 @@ result_with_history = predict_risk(reading, history=history)
 
 The returned `estimated_lead_time_hrs` uses fixed per-level approximations (MEDIUM 36, HIGH 18, CRITICAL 6, LOW `None`); it is not a separately predicted value.
 
+## Checking the interface
+
+Run the contract checks from the repository root. The default command checks the real model-backed predictor; `--stub` checks the threshold-based dashboard stand-in. The stub run skips the model-specific GLOF monotonicity check because the stub is not a trained model.
+
+```bash
+python -m ml.check_contract
+python -m ml.check_contract --stub
+```
+
 `scenario` must be `"glof"` or `"normal"`; `hours` must be at least 72. The generator is seeded for repeatable output. A GLOF episode ends at its simulated outburst hour and can therefore be shorter than the requested `hours`. For normal episodes, `hours_to_event` is `NaN`. Normal sensor data may contain sparse missing values and spikes by design; downstream model code will need an explicit handling policy.
 
 ## Current progress
@@ -171,6 +184,8 @@ The returned `estimated_lead_time_hrs` uses fixed per-level approximations (MEDI
 - Gradient Boosting training pipeline and saved model: `ml/train.py` and `ml/model.pkl`.
 - Training uses 300 simulated episodes with an episode-wise, stratified 80/20 split; held-out episode metrics are stored in the model bundle and printed during training.
 - Risk prediction interface: `predict_risk()` in `ml/predict.py`.
+- Dashboard-development stub: `ml/predict_stub.py` (threshold-based fake; its outputs are not model predictions).
+- Contract checker for the real predictor and stub: `ml/check_contract.py`.
 - Fixed estimated lead-time mapping by risk level; it is not an independent model output.
 
 **Planned; not present yet**

@@ -1,0 +1,42 @@
+{
+  "data_note": "All evaluation results are based on synthetic data and do not represent real-world model performance.",
+  "model": "GradientBoostingClassifier",
+  "split_sizes": {
+    "train_episodes": 240,
+    "test_episodes": 60,
+    "train_rows": 50874,
+    "test_rows": 12371
+  },
+  "per_class": {
+    "LOW": {
+      "precision": 0.9766334142176687,
+      "recall": 0.9941450919403532,
+      "f1": 0.9853114516275274,
+      "support": 10931
+    },
+    "MEDIUM": {
+      "precision": 0.8356164383561644,
+      "recall": 0.5930555555555556,
+      "f1": 0.69374492282697,
+      "support": 720
+    },
+    "HIGH": {
+      "precision": 0.8048128342245989,
+      "recall": 0.8361111111111111,
+      "f1": 0.8201634877384196,
+      "support": 360
+    },
+    "CRITICAL": {
+      "precision": 0.9526462395543176,
+      "recall": 0.95,
+      "f1": 0.9513212795549374,
+      "support": 360
+    }
+  },
+  "macro_avg": {
+    "precision": 0.8924272315881874,
+    "recall": 0.843327939651755,
+    "f1": 0.8626352854369637
+  },
+  "accuracy": 0.9649179532778271
+}
