@@ -6,14 +6,26 @@ sys.path.insert(0, ROOT)   # so "ml" and "app" are importable
 import pandas as pd
 import streamlit as st
 
+STUBS_USED = []
 try:
     from ml.predict import predict_risk
-    from ml.simulator import simulate_episode
-    from ml.lake_area import get_lake_area_series
-    USING = "real ML package"
 except ImportError:
-    from app.stubs import predict_risk, simulate_episode, get_lake_area_series
-    USING = "STUBS (ml/ not found)"
+    from app.stubs import predict_risk
+    STUBS_USED.append("predict_risk")
+
+try:
+    from ml.simulator import simulate_episode
+except ImportError:
+    from app.stubs import simulate_episode
+    STUBS_USED.append("simulate_episode")
+
+try:
+    from ml.lake_area import get_lake_area_series
+except ImportError:
+    from app.stubs import get_lake_area_series
+    STUBS_USED.append("get_lake_area_series")
+
+USING = "real ML package" if not STUBS_USED else f"STUBS ({', '.join(STUBS_USED)} unavailable)"
 
 from app import alerts, db
 
@@ -47,29 +59,35 @@ def banner(res):
         f"{info['action']}<br><small>{lead_txt}</small></div>", unsafe_allow_html=True)
 
 
-def handle_alert(ctx, h, res, reading):
+def handle_alert(ctx, h, res, reading, results):
     state = st.session_state.get("alert_state")
     if state is None or state["ctx"] != ctx or h < state["hour"]:
         state = {"ctx": ctx, "level": 0, "hour": -999}
-    lvl = res["level_index"]
+    recent_levels = [item["level_index"] for item in results[: h + 1]]
+    lvl = alerts.effective_level(recent_levels)
     status = None
     if alerts.should_alert(state["level"], lvl, h - state["hour"]):
-        status = alerts.raise_alert(reading, res)
+        alert_res = res.copy()
+        alert_res["risk_level"] = LEVELS[lvl]
+        alert_res["level_index"] = lvl
+        alert_res["estimated_lead_time_hrs"] = [None, 36, 18, 6][lvl]
+        status = alerts.raise_alert(reading, alert_res)
         state = {"ctx": ctx, "level": lvl, "hour": h}
     elif lvl < state["level"]:
         state["level"] = lvl
     st.session_state["alert_state"] = state
-    return status
+    return status, lvl
 
 
 def render_state(df, results, h, ctx):
     res, reading = results[h], df.iloc[h].to_dict()
     st.session_state["latest"] = (res, reading)
-    status = handle_alert(ctx, h, res, reading)
+    status, effective_lvl = handle_alert(ctx, h, res, reading, results)
 
     c1, c2, c3, c4 = st.columns(4)
     c1.metric("Hour", int(reading["hour"]))
     c2.metric("Risk level", res["risk_level"])
+    c2.caption(f"Effective alert level ({alerts.PERSISTENCE_HOURS}h): {LEVELS[effective_lvl]}")
     c3.metric("Risk score", f"{res['risk_score']:.2f}")
     c4.metric("Water level (m)", f"{reading['water_level_m']:.1f}")
     banner(res)
@@ -100,6 +118,8 @@ def render_state(df, results, h, ctx):
 st.sidebar.title("🏔️ GLOF EWS")
 page = st.sidebar.radio("Page", ["Overview", "Live Monitor", "Lake Growth", "Alerts Log", "Model Performance"])
 st.sidebar.caption(f"Backend: {USING}")
+if STUBS_USED:
+    st.sidebar.warning("STUB MODE - outputs are fake, not model predictions")
 st.sidebar.caption("Sensor data is synthetic; real labelled GLOF data is very scarce.")
 
 # ---------------- pages ----------------
@@ -157,6 +177,7 @@ elif page == "Lake Growth":
 elif page == "Alerts Log":
     st.title("Alerts Log")
     if st.button("Send test alert"):
+        # This manual test has one reading and no history, so it keeps immediate behaviour.
         fake = {"lake_id": "SL001", "timestamp": "TEST"}
         fres = {"risk_score": 0.9, "risk_level": "CRITICAL", "level_index": 3,
                 "top_factors": ["water_level_m", "seepage_rate", "dam_tilt_deg"],

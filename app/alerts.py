@@ -1,7 +1,7 @@
 # app/alerts.py - level mapping, Telegram, anti-repeat logic
 import os
-import requests
-from app import db
+
+PERSISTENCE_HOURS = 2
 
 LEVEL_INFO = {
     "LOW":      {"colour": "Green",  "hex": "#2e7d32", "emoji": "🟢", "action": "Normal monitoring"},
@@ -19,6 +19,8 @@ def send_telegram(msg):
     if not (tok and chat):
         return "Preview only (TG_TOKEN / TG_CHAT not set)"
     try:
+        import requests
+
         r = requests.post(f"https://api.telegram.org/bot{tok}/sendMessage",
                           data={"chat_id": chat, "text": msg}, timeout=10)
         return "Sent to Telegram" if r.ok else f"Telegram failed: {r.text}"
@@ -33,6 +35,14 @@ def should_alert(last_level, new_level, hours_since_last, repeat_hours=12):
     if new_level > last_level:
         return True
     return new_level >= 2 and hours_since_last >= repeat_hours
+
+
+def effective_level(recent_levels, k=PERSISTENCE_HOURS):
+    """Return the minimum of the last k predicted levels, or 0 if empty."""
+    levels = list(recent_levels)
+    if not levels:
+        return 0
+    return min(levels[-k:])
 
 
 def build_message(reading, res):
@@ -52,6 +62,8 @@ def build_message(reading, res):
 
 
 def raise_alert(reading, res):
+    from app import db
+
     msg = build_message(reading, res)
     status = send_telegram(msg)
     db.log_alert(reading.get("lake_id", "SL001"), reading.get("timestamp", ""),
