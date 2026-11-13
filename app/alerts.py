@@ -1,6 +1,7 @@
 # app/alerts.py - level mapping, Telegram, anti-repeat logic
 import os
-
+import requests
+from app import db
 PERSISTENCE_HOURS = 2
 
 LEVEL_INFO = {
@@ -27,6 +28,27 @@ def send_telegram(msg):
     except Exception as e:
         return f"Telegram error: {e}"
 
+def send_ntfy(msg):
+    topic = os.getenv("NTFY_TOPIC")
+    if not topic:
+        return "ntfy not configured"
+    try:
+        r = requests.post(f"https://ntfy.sh/{topic}", data=msg.encode("utf-8"),
+                          headers={"Title": "GLOF ALERT", "Priority": "high"}, timeout=10)
+        return "Push sent (ntfy)" if r.ok else f"ntfy failed: {r.text}"
+    except Exception as e:
+        return f"ntfy error: {e}"
+
+
+def send_discord(msg):
+    url = os.getenv("DISCORD_WEBHOOK")
+    if not url:
+        return "Discord not configured"
+    try:
+        r = requests.post(url, json={"content": msg[:1900]}, timeout=10)
+        return "Sent to Discord" if r.status_code in (200, 204) else f"Discord failed: {r.text}"
+    except Exception as e:
+        return f"Discord error: {e}"
 
 def should_alert(last_level, new_level, hours_since_last, repeat_hours=12):
     """Alert only when level goes up, or (HIGH/CRITICAL) every repeat_hours."""
@@ -62,10 +84,10 @@ def build_message(reading, res):
 
 
 def raise_alert(reading, res):
-    from app import db
-
     msg = build_message(reading, res)
-    status = send_telegram(msg)
+    parts = [send_telegram(msg), send_ntfy(msg), send_discord(msg)]
+    used = [p for p in parts if "not configured" not in p and "Preview only" not in p]
+    status = " | ".join(used) if used else "Preview only (no channel configured)"
     db.log_alert(reading.get("lake_id", "SL001"), reading.get("timestamp", ""),
                  res["risk_level"], res["risk_score"], msg, status)
     return status
