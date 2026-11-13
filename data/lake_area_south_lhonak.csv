@@ -1,0 +1,6 @@
+date,area_ha,area_km2,source,method,note
+2023-09-17,162.7,1.627,"NRSC/ISRO map ID 2023/FL/SIK/03-VAP/04-Oct-2023 (RISAT-1A)",approximate_published,"approximate, radar-based, pre-event"
+2023-09-28,167.4,1.674,"NRSC/ISRO map ID 2023/FL/SIK/03-VAP/04-Oct-2023 (Sentinel-1A)",approximate_published,"approximate, radar-based, pre-event"
+2023-10-04 06:00,60.3,0.603,"NRSC/ISRO map ID 2023/FL/SIK/03-VAP/04-Oct-2023 (RISAT-1A)",approximate_published,"approximate, post-outburst"
+2023-09-27,170,1.7,"Planet Labs optical analysis by a researcher, reported by Down To Earth (9 Oct 2023) and EGU Cryospheric blog (2 Nov 2023)",approximate_published,"secondary source, approximate; different sensor from NRSC rows"
+2023-10-07,150,1.5,"Planet Labs optical analysis by a researcher, reported by Down To Earth (9 Oct 2023) and EGU Cryospheric blog (2 Nov 2023)",approximate_published,"secondary source, approximate"
