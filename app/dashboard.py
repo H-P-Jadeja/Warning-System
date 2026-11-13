@@ -150,8 +150,10 @@ elif page == "Live Monitor":
 elif page == "Lake Growth":
     st.title("Lake Growth - South Lhonak")
     ser = get_lake_area_series()
-    st.line_chart(ser.set_index("date")["area_km2"])
-    st.caption("Data source: " + ", ".join(sorted(ser["source"].astype(str).unique())))
+    st.warning("Approximate published observations (NRSC/ISRO radar-based maps and a secondary "
+               "Planet Labs report). These are NOT Sentinel-2 NDWI values computed by this project.")
+    st.scatter_chart(ser, x="date", y="area_km2")
+    st.caption("The 4 Oct 2023 point is after the outburst, so the lake area drops sharply.")
     st.dataframe(ser, use_container_width=True)
 
 elif page == "Alerts Log":
@@ -171,6 +173,51 @@ elif page == "Alerts Log":
         st.dataframe(log, use_container_width=True)
 
 elif page == "Model Performance":
+    st.title("Model Performance")
+    mpath = os.path.join(RESULTS, "metrics.json")
+    if not os.path.exists(mpath):
+        st.warning("ml/results/metrics.json not found.")
+    else:
+        m = json.load(open(mpath))
+        if m.get("data_note"):
+            st.warning(m["data_note"])
+        st.write(f"Model: **{m.get('model', m.get('best_model', '-'))}**")
+        sp = m.get("split_sizes")
+        if sp:
+            st.write(f"Train episodes: {sp.get('train_episodes')} | Test episodes: {sp.get('test_episodes')} "
+                     f"(split by episode)")
+        macro = m.get("macro_avg", {})
+        c1, c2, c3, c4 = st.columns(4)
+        c1.metric("Macro precision", f"{macro.get('precision', m.get('macro_precision', 0)):.2f}")
+        c2.metric("Macro recall", f"{macro.get('recall', m.get('macro_recall', 0)):.2f}")
+        c3.metric("Macro F1", f"{macro.get('f1', m.get('macro_f1', 0)):.2f}")
+        c4.metric("Accuracy", f"{m.get('accuracy', 0):.2f}")
+        if m.get("per_class"):
+            st.subheader("Per class")
+            st.dataframe(pd.DataFrame(m["per_class"]).T.round(2))
+        if m.get("median_lead_time_hrs") is not None:
+            st.write(f"Median lead time: {m['median_lead_time_hrs']} h")
+        if m.get("model_comparison"):
+            st.subheader("Model comparison")
+            st.dataframe(pd.DataFrame(m["model_comparison"]).round(2))
+
+    for fname, title in [("warning_timing.csv", "Warning timing"),
+                         ("per_event_type_recall.csv", "Recall by event type"),
+                         ("alert_persistence.csv", "Alert persistence")]:
+        p = os.path.join(RESULTS, fname)
+        if os.path.exists(p):
+            st.subheader(title)
+            st.dataframe(pd.read_csv(p), use_container_width=True)
+    fa = os.path.join(RESULTS, "false_alarms.json")
+    if os.path.exists(fa):
+        st.subheader("False alarms")
+        st.json(json.load(open(fa)))
+
+    for f in ["confusion_matrix.png", "feature_importance.png", "risk_timeline_example.png",
+              "lead_time_hist.png", "lake_area_growth.png"]:
+        p = os.path.join(RESULTS, f)
+        if os.path.exists(p):
+            st.image(p, caption=f, use_container_width=True)
     st.title("Model Performance")
     mpath = os.path.join(RESULTS, "metrics.json")
     if not os.path.exists(mpath):
