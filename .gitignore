@@ -3,6 +3,12 @@ __MACOSX/
 *.zip
 .ipynb_checkpoints/
 .venv/
+venv/
+env/
+.env
+.streamlit/secrets.toml
+*.db
+app/alerts.db
 __pycache__/
 *.py[cod]
 .pytest_cache/
