@@ -1,8 +1,8 @@
 # GLOF Early Warning System
 
-A software prototype for exploring an early warning system for Glacial Lake Outburst Floods (GLOFs), with **South Lhonak Lake, Sikkim** as the project case study. The planned system combines simulated hourly sensor readings and lake-area observations with machine-learning risk estimates, a dashboard, and alerts.
+A software prototype for exploring an early warning system for Glacial Lake Outburst Floods (GLOFs), with **South Lhonak Lake, Sikkim** as the project case study. The repository currently contains a synthetic sensor simulator and an episode-wise Gradient Boosting training pipeline. Satellite lake-area observations, a risk-prediction interface, dashboard, and alerts remain planned.
 
-> **Project status:** Early development. The simulator is the only implemented project feature so far. Model training, satellite-derived lake-area data, risk prediction, dashboard, and alert delivery are planned and are not yet available in this repository.
+> **Project status:** Early development. Synthetic episode generation and model training are implemented. The saved model is trained on simulated data only; satellite-derived lake-area data, the prediction interface, dashboard, and alert delivery are not yet implemented.
 
 ## Project overview
 
@@ -18,7 +18,7 @@ This project is a prototype and does not connect to live field sensors or provid
 - Present readings and risk estimates in a dashboard and support alert demonstrations.
 - Keep the prototype transparent about synthetic data, assumptions, and limitations.
 
-These are the project objectives from the handbook; only the simulator objective has code in the repository at present.
+These are the project objectives from the handbook. The simulator and initial model-training objective have code in the repository; the remaining system components are planned.
 
 ## Features and progress
 
@@ -26,14 +26,17 @@ These are the project objectives from the handbook; only the simulator objective
 
 - `ml/simulator.py` generates seeded, hourly synthetic sensor data for `glof` and `normal` scenarios.
 - GLOF episodes select a rain/inflow, seepage/piping, or seismic/landslide precursor pattern.
+- Seismic/landslide episodes include a weak, gradual seismic, tilt, and water-level precursor before the stronger simulated trigger.
 - Sensor readings include water level, seepage, dam tilt, inflow, seismic activity, rainfall, water temperature, and lake area.
 - GLOF episode rows include handbook-style risk labels and hours to the simulated event. Normal episodes have missing-reading and spike fault examples.
 - `make_dataset()` combines multiple episodes with episode IDs and scenario labels for future episode-wise data splitting.
+- `ml/train.py` trains a `GradientBoostingClassifier` on 300 generated episodes using a stratified 80/20 split by episode (240 training episodes and 60 held-out episodes).
+- Missing feature values are median-imputed using training data. The joblib bundle in `ml/model.pkl` contains the fitted classifier and imputer, ordered features, normal-data means and standard deviations, and held-out classification metrics.
 - Project directories are reserved for the data, application, documentation, and model-result components described in the handbook.
 
 ### Planned
 
-- Dataset refinement, model training and comparison, saved model, and evaluation metrics.
+- Comparison against additional model types, expanded evaluation, anomaly detection, robustness analysis, and evaluation plots.
 - Contract-compatible `predict_risk()` with risk score, level, key factors, and estimated lead time.
 - South Lhonak lake-area series and documented Sentinel-2 NDWI method (or clearly cited approximate data if satellite processing is not feasible).
 - Contract checks, evaluation plots, and Member A's ML report and usage documentation.
@@ -42,11 +45,13 @@ These are the project objectives from the handbook; only the simulator objective
 
 ## Tech stack
 
-### Used by the implemented simulator
+### Used by implemented components
 
-- Python 3.10 or newer
+- Python 3.14.3 (version reported by the current environment)
 - NumPy
 - pandas
+- scikit-learn
+- joblib
 
 ### Planned by the project handbook
 
@@ -56,7 +61,7 @@ These are the project objectives from the handbook; only the simulator objective
 - Google Earth Engine / Sentinel-2 NDWI for lake-area analysis, subject to data access and implementation
 - Optional FastAPI for a prediction API; optional XGBoost or SHAP for model comparison/explanations
 
-The planned tools above are not all installed or integrated by this repository yet.
+Streamlit, requests/Telegram, and Google Earth Engine are planned components and are not integrated into this repository yet.
 
 ## Architecture
 
@@ -64,11 +69,11 @@ The intended architecture follows the handbook's three layers:
 
 ```text
 Simulated sensor readings ─┐
-                           ├─> Data layer ─> ML models ─> Risk prediction ─> Dashboard and alerts
-Lake-area observations ────┘                  (planned)       (planned)          (planned)
+                           ├─> Data layer ─> Training pipeline ─> Saved model ─> Risk prediction ─> Dashboard and alerts
+Lake-area observations ────┘                  (implemented)       (implemented)     (planned)           (planned)
 ```
 
-The current implementation covers only synthetic sensor episode generation in the data layer. Satellite/lake-area ingestion, model training and inference, and the application layer remain planned.
+The implemented path generates synthetic sensor episodes and trains a Gradient Boosting model. Satellite/lake-area ingestion, contract-compatible inference, and the application layer remain planned.
 
 ## Repository structure
 
@@ -76,12 +81,15 @@ The current implementation covers only synthetic sensor episode generation in th
 Warning-System/
 ├── README.md
 ├── .gitignore
+├── requirements.txt        # Pinned dependencies for the current environment
 ├── app/                    # Reserved for Member B's dashboard and alert code
 ├── data/                   # Reserved for lake-area data and generated datasets
 ├── docs/                   # Reserved for report sections and project documentation
 └── ml/
     ├── __init__.py
     ├── simulator.py        # Implemented synthetic episode and dataset generation
+    ├── train.py            # Implemented 300-episode training and evaluation
+    ├── model.pkl           # Trained synthetic-data model bundle
     └── results/            # Reserved for metrics and evaluation figures
 ```
 
@@ -89,14 +97,20 @@ The folders `app/`, `data/`, `docs/`, and `ml/results/` are placeholders, not ev
 
 ## Setup
 
-From the repository root, create and activate a virtual environment, then install the simulator's current dependencies:
+The pinned packages were captured from the current environment, which reports **Python 3.14.3**. From the repository root, create and activate a virtual environment, then install the project dependencies:
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate       # macOS / Linux
 # .venv\Scripts\activate      # Windows PowerShell
 python -m pip install --upgrade pip
-python -m pip install numpy pandas
+python -m pip install -r requirements.txt
+```
+
+To retrain the model using the default 300 simulated episodes:
+
+```bash
+python -m ml.train
 ```
 
 Generate a single episode or a multi-episode dataset from Python:
@@ -119,28 +133,30 @@ print(dataset[["episode_id", "scenario", "label"]].head())
 **Implemented**
 
 - Sensor simulator: `ml/simulator.py`.
+- Weak seismic/landslide precursor added to the simulator.
 - Multi-episode dataset helper: `make_dataset()` in `ml/simulator.py`.
+- Gradient Boosting training pipeline and saved model: `ml/train.py` and `ml/model.pkl`.
+- Training uses 300 simulated episodes with an episode-wise, stratified 80/20 split; held-out episode metrics are stored in the model bundle and printed during training.
 
 **Planned; not present yet**
 
-- Model training, evaluation, and metrics.
+- Additional model comparison, anomaly detection, noise robustness analysis, and report figures.
 - Risk prediction contract implementation.
 - Satellite lake-area data and extraction script.
 - Dashboard and alerts; `app/` is currently a placeholder.
 - Reports, figures, and presentation; `docs/` and `ml/results/` are currently placeholders.
 
-No model performance, warning lead time, or real satellite measurements are claimed at this stage.
+Evaluation is based only on held-out synthetic episodes. It is not evidence of real-world GLOF prediction performance, warning lead time, or real satellite measurements.
 
 ## Future development plan
 
 The handbook divides work between Member A (data and machine learning) and Member B (dashboard and alerts). Follow the frozen interface contract in the handbook when implementing the remaining modules.
 
-1. Complete the simulator handoff and document its behavior and data assumptions.
-2. Build episode-wise model training, model comparison, evaluation metrics, and figures.
-3. Implement and check the exact `predict_risk(reading, history=None)` contract.
-4. Add South Lhonak lake-area observations with traceable sources and a clear distinction between measured and approximate data.
-5. Build the dashboard and alert workflow against the published contract, initially using stubs if needed.
-6. Integrate both workstreams, document limitations, and assemble the final report and presentation.
+1. Compare additional models and complete evaluation metrics, anomaly analysis, robustness checks, and figures.
+2. Implement and check the exact `predict_risk(reading, history=None)` contract.
+3. Add South Lhonak lake-area observations with traceable sources and a clear distinction between measured and approximate data.
+4. Build the dashboard and alert workflow against the published contract, initially using stubs if needed.
+5. Integrate both workstreams, document limitations, and assemble the final report and presentation.
 
 Consult the project handbook for the detailed role split, function signatures, evaluation outputs, and submission checklist. Its instructions are project requirements, while this README records the repository's actual current implementation.
 
@@ -148,5 +164,6 @@ Consult the project handbook for the detailed role split, function signatures, e
 
 - All sensor values currently produced by `ml/simulator.py` are synthetic and are not measurements from South Lhonak Lake.
 - Simulated precursors and labels are assumptions for prototyping; they do not establish a validated GLOF prediction capability.
-- No operational sensor feed, satellite-derived series, trained risk model, or live alert channel is implemented yet.
+- No operational sensor feed, satellite-derived series, contract-compatible live risk inference, or live alert channel is implemented yet.
+- The saved model and its metrics are based on synthetic scenarios; no real-world model performance is claimed.
 - This prototype must not be used as an emergency warning service.
