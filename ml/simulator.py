@@ -21,7 +21,8 @@ SENSOR_COLUMNS = [
     "lake_area_km2",
 ]
 EPISODE_COLUMNS = [
-    "lake_id", "timestamp", "hour", *SENSOR_COLUMNS, "label", "hours_to_event"
+    "lake_id", "timestamp", "hour", *SENSOR_COLUMNS, "label", "hours_to_event",
+    "event_type",
 ]
 GLOF_TYPES = ("rain", "seepage", "seismic")
 
@@ -95,6 +96,7 @@ def simulate_episode(scenario: str = "glof", seed: int = 0, hours: int = 240) ->
     rng = np.random.default_rng(seed)
     df = _normal_readings(rng, int(hours))
     event_hour: int | None = None
+    event_type: str | None = None
     labels = np.zeros(hours, dtype=np.int64)
     hours_to_event = np.full(hours, np.nan, dtype=float)
 
@@ -157,6 +159,7 @@ def simulate_episode(scenario: str = "glof", seed: int = 0, hours: int = 240) ->
     out.insert(0, "lake_id", LAKE_ID)
     out["label"] = labels
     out["hours_to_event"] = hours_to_event
+    out["event_type"] = event_type
     return out[EPISODE_COLUMNS].reset_index(drop=True)
 
 
