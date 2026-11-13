@@ -1,8 +1,8 @@
 # GLOF Early Warning System
 
-A software prototype for exploring an early warning system for Glacial Lake Outburst Floods (GLOFs), with **South Lhonak Lake, Sikkim** as the project case study. The repository currently contains a synthetic sensor simulator and an episode-wise Gradient Boosting training pipeline. Satellite lake-area observations, a risk-prediction interface, dashboard, and alerts remain planned.
+A software prototype for exploring an early warning system for Glacial Lake Outburst Floods (GLOFs), with **South Lhonak Lake, Sikkim** as the project case study. The repository currently contains a synthetic sensor simulator, an episode-wise Gradient Boosting training pipeline, and a risk-prediction interface. Satellite lake-area observations, dashboard, and alerts remain planned.
 
-> **Project status:** Early development. Synthetic episode generation and model training are implemented. The saved model is trained on simulated data only; satellite-derived lake-area data, the prediction interface, dashboard, and alert delivery are not yet implemented.
+> **Project status:** Early development. Synthetic episode generation, model training, and contract-based risk prediction are implemented. The saved model is trained on simulated data only; satellite-derived lake-area data, dashboard, and alert delivery are not yet implemented.
 
 ## Project overview
 
@@ -32,12 +32,13 @@ These are the project objectives from the handbook. The simulator and initial mo
 - `make_dataset()` combines multiple episodes with episode IDs and scenario labels for future episode-wise data splitting.
 - `ml/train.py` trains a `GradientBoostingClassifier` on 300 generated episodes using a stratified 80/20 split by episode (240 training episodes and 60 held-out episodes).
 - Missing feature values are median-imputed using training data. The joblib bundle in `ml/model.pkl` contains the fitted classifier and imputer, ordered features, normal-data means and standard deviations, and held-out classification metrics.
+- `ml/predict.py` implements `predict_risk(reading, history=None)`, returning a 0–100 risk score, risk level, level index, top three factors, and estimated lead time.
+- `estimated_lead_time_hrs` is a fixed per-level approximation: LOW = `None`, MEDIUM = 36, HIGH = 18, CRITICAL = 6 hours. It is not separately predicted by the model.
 - Project directories are reserved for the data, application, documentation, and model-result components described in the handbook.
 
 ### Planned
 
 - Comparison against additional model types, expanded evaluation, anomaly detection, robustness analysis, and evaluation plots.
-- Contract-compatible `predict_risk()` with risk score, level, key factors, and estimated lead time.
 - South Lhonak lake-area series and documented Sentinel-2 NDWI method (or clearly cited approximate data if satellite processing is not feasible).
 - Contract checks, evaluation plots, and Member A's ML report and usage documentation.
 - Streamlit dashboard, alert logging and Telegram integration, architecture diagram, final merged report, and presentation. These are application-layer deliverables assigned to Member B in the handbook.
@@ -55,7 +56,6 @@ These are the project objectives from the handbook. The simulator and initial mo
 
 ### Planned by the project handbook
 
-- scikit-learn and joblib for model training and persistence
 - Streamlit for the dashboard
 - requests and Telegram Bot API for optional alert delivery
 - Google Earth Engine / Sentinel-2 NDWI for lake-area analysis, subject to data access and implementation
@@ -68,12 +68,12 @@ Streamlit, requests/Telegram, and Google Earth Engine are planned components and
 The intended architecture follows the handbook's three layers:
 
 ```text
-Simulated sensor readings ─┐
-                           ├─> Data layer ─> Training pipeline ─> Saved model ─> Risk prediction ─> Dashboard and alerts
-Lake-area observations ────┘                  (implemented)       (implemented)     (planned)           (planned)
+Simulated sensor readings ──> Data layer ──> Training pipeline ──> Saved model ──> Risk prediction ──> Dashboard and alerts
+                               (implemented)  (implemented)        (implemented)   (implemented)       (planned)
+Lake-area observations: planned
 ```
 
-The implemented path generates synthetic sensor episodes and trains a Gradient Boosting model. Satellite/lake-area ingestion, contract-compatible inference, and the application layer remain planned.
+The implemented path generates synthetic sensor episodes, trains a Gradient Boosting model, and produces risk estimates through `ml/predict.py`. Satellite/lake-area ingestion and the application layer remain planned.
 
 ## Repository structure
 
@@ -90,6 +90,7 @@ Warning-System/
     ├── simulator.py        # Implemented synthetic episode and dataset generation
     ├── train.py            # Implemented 300-episode training and evaluation
     ├── model.pkl           # Trained synthetic-data model bundle
+    ├── predict.py          # Implemented risk prediction interface
     └── results/            # Reserved for metrics and evaluation figures
 ```
 
@@ -126,6 +127,38 @@ print(glof_episode.head())
 print(dataset[["episode_id", "scenario", "label"]].head())
 ```
 
+Get a risk estimate for one reading. The eight sensor fields and the `lake_id` and `timestamp` fields are required. Optional history must be ordered oldest first; six or more earlier readings enable the six-hour change features, using `history[-6]` as the six-hour reference. With fewer than six readings, those features are set to zero.
+
+```python
+from ml.predict import predict_risk
+
+reading = {
+    "lake_id": "SL001",
+    "timestamp": "2024-08-01T10:00:00",
+    "water_level_m": 12.2,
+    "seepage_rate": 1.4,
+    "dam_tilt_deg": 0.32,
+    "inflow_rate": 8.3,
+    "seismic_activity": 0.03,
+    "rainfall_mm": 2.0,
+    "water_temp_c": 3.0,
+    "lake_area_km2": 1.31,
+}
+
+# No history: the three six-hour change features default to 0.0.
+result = predict_risk(reading)
+
+# Optional example history: six prior hourly records, oldest first.
+# Replace these repeated sample values with actual earlier readings.
+history = [
+    {**reading, "timestamp": f"2024-08-01T{hour:02d}:00:00"}
+    for hour in range(4, 10)
+]
+result_with_history = predict_risk(reading, history=history)
+```
+
+The returned `estimated_lead_time_hrs` uses fixed per-level approximations (MEDIUM 36, HIGH 18, CRITICAL 6, LOW `None`); it is not a separately predicted value.
+
 `scenario` must be `"glof"` or `"normal"`; `hours` must be at least 72. The generator is seeded for repeatable output. A GLOF episode ends at its simulated outburst hour and can therefore be shorter than the requested `hours`. For normal episodes, `hours_to_event` is `NaN`. Normal sensor data may contain sparse missing values and spikes by design; downstream model code will need an explicit handling policy.
 
 ## Current progress
@@ -137,11 +170,12 @@ print(dataset[["episode_id", "scenario", "label"]].head())
 - Multi-episode dataset helper: `make_dataset()` in `ml/simulator.py`.
 - Gradient Boosting training pipeline and saved model: `ml/train.py` and `ml/model.pkl`.
 - Training uses 300 simulated episodes with an episode-wise, stratified 80/20 split; held-out episode metrics are stored in the model bundle and printed during training.
+- Risk prediction interface: `predict_risk()` in `ml/predict.py`.
+- Fixed estimated lead-time mapping by risk level; it is not an independent model output.
 
 **Planned; not present yet**
 
 - Additional model comparison, anomaly detection, noise robustness analysis, and report figures.
-- Risk prediction contract implementation.
 - Satellite lake-area data and extraction script.
 - Dashboard and alerts; `app/` is currently a placeholder.
 - Reports, figures, and presentation; `docs/` and `ml/results/` are currently placeholders.
@@ -153,10 +187,9 @@ Evaluation is based only on held-out synthetic episodes. It is not evidence of r
 The handbook divides work between Member A (data and machine learning) and Member B (dashboard and alerts). Follow the frozen interface contract in the handbook when implementing the remaining modules.
 
 1. Compare additional models and complete evaluation metrics, anomaly analysis, robustness checks, and figures.
-2. Implement and check the exact `predict_risk(reading, history=None)` contract.
-3. Add South Lhonak lake-area observations with traceable sources and a clear distinction between measured and approximate data.
-4. Build the dashboard and alert workflow against the published contract, initially using stubs if needed.
-5. Integrate both workstreams, document limitations, and assemble the final report and presentation.
+2. Add South Lhonak lake-area observations with traceable sources and a clear distinction between measured and approximate data.
+3. Build the dashboard and alert workflow against the published contract, initially using stubs if needed.
+4. Integrate both workstreams, document limitations, and assemble the final report and presentation.
 
 Consult the project handbook for the detailed role split, function signatures, evaluation outputs, and submission checklist. Its instructions are project requirements, while this README records the repository's actual current implementation.
 
