@@ -124,7 +124,7 @@ def predict_risk(reading: dict, history: list | None = None) -> dict:
         factor_scores[field] = max(0.0, (value - medium) / (critical - medium))
 
     risk_level = LEVELS[level_index]
-    risk_score = float((100.0 / 3.0) * level_index)
+    risk_score = float(level_index / 3.0)
     top_factors = sorted(
         factor_scores,
         key=lambda field: factor_scores[field],

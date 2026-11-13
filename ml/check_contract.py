@@ -74,7 +74,7 @@ def _assert_result(result: Any) -> None:
 
     score = result["risk_score"]
     assert type(score) is float and math.isfinite(score), "risk_score must be a finite float"
-    assert 0.0 <= score <= 100.0, "risk_score must be in the 0-100 range"
+    assert 0.0 <= score <= 1.0, "risk_score must be in the 0-1 range"
 
     level = result["risk_level"]
     assert isinstance(level, str) and level in LEVELS, "risk_level is invalid"

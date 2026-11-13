@@ -1,7 +1,7 @@
 """Contract-compatible risk inference for the GLOF early-warning prototype.
 
 The trained bundle is loaded lazily and cached once per Python process. Risk
-scores are returned on the 0-100 scale requested by the project operator.
+scores are returned as probabilities on a 0-1 scale.
 All predictions are based on synthetic training data and are not operational
 warnings.
 """
@@ -111,8 +111,8 @@ def predict_risk(reading: dict, history: list | None = None) -> dict:
             otherwise those changes are zero.
 
     Returns the handbook fields ``risk_score``, ``risk_level``, ``level_index``,
-    ``top_factors``, and ``estimated_lead_time_hrs``. The user-requested score
-    scale is 0-100; level is the class with the highest predicted probability.
+    ``top_factors``, and ``estimated_lead_time_hrs``. ``risk_score`` is a float
+    from 0.0 to 1.0; level is the class with the highest predicted probability.
     """
     if not isinstance(reading, Mapping):
         raise ValueError("reading must be a mapping containing the required fields")
@@ -172,8 +172,8 @@ def predict_risk(reading: dict, history: list | None = None) -> dict:
         raise ValueError(f"Model predicted unsupported risk class {predicted_class}")
     risk_level = levels[predicted_class]
 
-    # Map class probabilities to the 0-100 range, evenly spanning the four levels.
-    class_scores = np.asarray([0.0, 100.0 / 3.0, 200.0 / 3.0, 100.0])
+    # Preserve the probability-weighted level score on the handbook's 0-1 scale.
+    class_scores = np.asarray([0.0, 1.0 / 3.0, 2.0 / 3.0, 1.0])
     score_by_class = {int(label): class_scores[int(label)] for label in classes}
     risk_score = float(sum(probability * score_by_class[int(label)]
                            for probability, label in zip(probabilities, classes)))
