@@ -1,0 +1,360 @@
+{
+  "data_note": "All results are on synthetic data and do not represent real-world model performance.",
+  "recommended_k_note": "The recommended persistence k is a trade-off between suppressing brief false alerts and preserving timely warnings; it is not a validated operational setting.",
+  "alert_rule": {
+    "description": "Alert when the risk level rises above the last alerted level (level >= 1), or when level >= HIGH and at least 12 hours have elapsed since the last alert. The remembered level steps down when the risk level falls.",
+    "persistence": "At hour h, use the minimum predicted level over the last k rows.",
+    "repeat_hours": 12
+  },
+  "held_out_episodes": 60,
+  "results_by_persistence": {
+    "1": {
+      "normal_false_alerts": {
+        "episodes": 30,
+        "hours": 7200,
+        "false_alerts_total": 21,
+        "false_alerts_per_episode": 0.7,
+        "false_alerts_per_1000_hours": 2.9166666666666665
+      },
+      "glof_overall": {
+        "episodes": 30,
+        "episodes_with_alert_before_event": 30,
+        "fraction_with_alert_before_event": 1.0,
+        "first_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 50.0,
+          "mean_lead_time_hours": 54.36666666666667,
+          "minimum_lead_time_hours": 21
+        },
+        "episodes_with_high_alert_before_event": 30,
+        "fraction_with_high_alert_before_event": 1.0,
+        "first_high_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 24.0,
+          "mean_lead_time_hours": 27.033333333333335,
+          "minimum_lead_time_hours": 20
+        }
+      },
+      "glof_by_event_type": {
+        "rain": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 52.0,
+            "mean_lead_time_hours": 57.55555555555556,
+            "minimum_lead_time_hours": 43
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 22.0,
+            "mean_lead_time_hours": 23.0,
+            "minimum_lead_time_hours": 20
+          }
+        },
+        "seepage": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 51.0,
+            "mean_lead_time_hours": 56.22222222222222,
+            "minimum_lead_time_hours": 47
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 24.0,
+            "mean_lead_time_hours": 23.88888888888889,
+            "minimum_lead_time_hours": 23
+          }
+        },
+        "seismic": {
+          "episodes": 12,
+          "episodes_with_alert_before_event": 12,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 32.5,
+            "mean_lead_time_hours": 50.583333333333336,
+            "minimum_lead_time_hours": 21
+          },
+          "episodes_with_high_alert_before_event": 12,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 30.5,
+            "mean_lead_time_hours": 32.416666666666664,
+            "minimum_lead_time_hours": 21
+          }
+        }
+      }
+    },
+    "2": {
+      "normal_false_alerts": {
+        "episodes": 30,
+        "hours": 7200,
+        "false_alerts_total": 0,
+        "false_alerts_per_episode": 0.0,
+        "false_alerts_per_1000_hours": 0.0
+      },
+      "glof_overall": {
+        "episodes": 30,
+        "episodes_with_alert_before_event": 30,
+        "fraction_with_alert_before_event": 1.0,
+        "first_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 46.0,
+          "mean_lead_time_hours": 39.1,
+          "minimum_lead_time_hours": 20
+        },
+        "episodes_with_high_alert_before_event": 30,
+        "fraction_with_high_alert_before_event": 1.0,
+        "first_high_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 22.0,
+          "mean_lead_time_hours": 22.766666666666666,
+          "minimum_lead_time_hours": 18
+        }
+      },
+      "glof_by_event_type": {
+        "rain": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 49.0,
+            "mean_lead_time_hours": 48.77777777777778,
+            "minimum_lead_time_hours": 42
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 21.0,
+            "mean_lead_time_hours": 21.77777777777778,
+            "minimum_lead_time_hours": 18
+          }
+        },
+        "seepage": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 47.0,
+            "mean_lead_time_hours": 47.111111111111114,
+            "minimum_lead_time_hours": 46
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 22.0,
+            "mean_lead_time_hours": 22.444444444444443,
+            "minimum_lead_time_hours": 22
+          }
+        },
+        "seismic": {
+          "episodes": 12,
+          "episodes_with_alert_before_event": 12,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 25.0,
+            "mean_lead_time_hours": 25.833333333333332,
+            "minimum_lead_time_hours": 20
+          },
+          "episodes_with_high_alert_before_event": 12,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 21.5,
+            "mean_lead_time_hours": 23.75,
+            "minimum_lead_time_hours": 18
+          }
+        }
+      }
+    },
+    "3": {
+      "normal_false_alerts": {
+        "episodes": 30,
+        "hours": 7200,
+        "false_alerts_total": 0,
+        "false_alerts_per_episode": 0.0,
+        "false_alerts_per_1000_hours": 0.0
+      },
+      "glof_overall": {
+        "episodes": 30,
+        "episodes_with_alert_before_event": 30,
+        "fraction_with_alert_before_event": 1.0,
+        "first_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 43.5,
+          "mean_lead_time_hours": 36.266666666666666,
+          "minimum_lead_time_hours": 17
+        },
+        "episodes_with_high_alert_before_event": 30,
+        "fraction_with_high_alert_before_event": 1.0,
+        "first_high_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 21.0,
+          "mean_lead_time_hours": 20.333333333333332,
+          "minimum_lead_time_hours": 12
+        }
+      },
+      "glof_by_event_type": {
+        "rain": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 45.0,
+            "mean_lead_time_hours": 44.888888888888886,
+            "minimum_lead_time_hours": 41
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 20.0,
+            "mean_lead_time_hours": 20.11111111111111,
+            "minimum_lead_time_hours": 17
+          }
+        },
+        "seepage": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 45.0,
+            "mean_lead_time_hours": 45.666666666666664,
+            "minimum_lead_time_hours": 44
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 21.0,
+            "mean_lead_time_hours": 21.444444444444443,
+            "minimum_lead_time_hours": 21
+          }
+        },
+        "seismic": {
+          "episodes": 12,
+          "episodes_with_alert_before_event": 12,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 21.0,
+            "mean_lead_time_hours": 22.75,
+            "minimum_lead_time_hours": 17
+          },
+          "episodes_with_high_alert_before_event": 12,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 19.5,
+            "mean_lead_time_hours": 19.666666666666668,
+            "minimum_lead_time_hours": 12
+          }
+        }
+      }
+    },
+    "4": {
+      "normal_false_alerts": {
+        "episodes": 30,
+        "hours": 7200,
+        "false_alerts_total": 0,
+        "false_alerts_per_episode": 0.0,
+        "false_alerts_per_1000_hours": 0.0
+      },
+      "glof_overall": {
+        "episodes": 30,
+        "episodes_with_alert_before_event": 30,
+        "fraction_with_alert_before_event": 1.0,
+        "first_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 41.5,
+          "mean_lead_time_hours": 34.5,
+          "minimum_lead_time_hours": 16
+        },
+        "episodes_with_high_alert_before_event": 30,
+        "fraction_with_high_alert_before_event": 1.0,
+        "first_high_alert_lead_time": {
+          "episodes_with_alert": 30,
+          "median_lead_time_hours": 20.0,
+          "mean_lead_time_hours": 18.966666666666665,
+          "minimum_lead_time_hours": 9
+        }
+      },
+      "glof_by_event_type": {
+        "rain": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 43.0,
+            "mean_lead_time_hours": 43.22222222222222,
+            "minimum_lead_time_hours": 40
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 19.0,
+            "mean_lead_time_hours": 19.11111111111111,
+            "minimum_lead_time_hours": 16
+          }
+        },
+        "seepage": {
+          "episodes": 9,
+          "episodes_with_alert_before_event": 9,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 44.0,
+            "mean_lead_time_hours": 44.666666666666664,
+            "minimum_lead_time_hours": 43
+          },
+          "episodes_with_high_alert_before_event": 9,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 9,
+            "median_lead_time_hours": 20.0,
+            "mean_lead_time_hours": 20.444444444444443,
+            "minimum_lead_time_hours": 20
+          }
+        },
+        "seismic": {
+          "episodes": 12,
+          "episodes_with_alert_before_event": 12,
+          "fraction_with_alert_before_event": 1.0,
+          "first_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 18.5,
+            "mean_lead_time_hours": 20.333333333333332,
+            "minimum_lead_time_hours": 16
+          },
+          "episodes_with_high_alert_before_event": 12,
+          "fraction_with_high_alert_before_event": 1.0,
+          "first_high_alert_lead_time": {
+            "episodes_with_alert": 12,
+            "median_lead_time_hours": 18.0,
+            "mean_lead_time_hours": 17.75,
+            "minimum_lead_time_hours": 9
+          }
+        }
+      }
+    }
+  }
+}

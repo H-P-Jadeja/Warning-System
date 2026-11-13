@@ -199,7 +199,10 @@ def _write_warning_timing(test_rows: pd.DataFrame, predictions: np.ndarray) -> t
     return delays, never_warned
 
 
-def main() -> int:
+def load_held_out_predictions() -> tuple[
+    dict[str, Any], pd.DataFrame, pd.DataFrame, np.ndarray, dict[str, Any], list[str]
+]:
+    """Recreate the saved model's held-out split and return its row predictions."""
     bundle = joblib.load(MODEL_PATH)
     training_config = bundle["training_config"]
     if (
@@ -234,8 +237,14 @@ def main() -> int:
     )
     _compare_saved_metrics(report, bundle.get("held_out_classification_report"))
 
+    return bundle, train_rows, test_rows, y_pred, report, feature_names
+
+
+def main() -> int:
+    bundle, train_rows, test_rows, y_pred, report, feature_names = load_held_out_predictions()
+
     RESULTS_DIR.mkdir(parents=True, exist_ok=True)
-    confusion = confusion_matrix(y_true, y_pred, labels=CLASS_IDS)
+    confusion = confusion_matrix(test_rows["label"].astype(int).to_numpy(), y_pred, labels=CLASS_IDS)
     metrics = {
         "data_note": SYNTHETIC_DATA_NOTE,
         "model": bundle.get("model_name", "unknown"),
