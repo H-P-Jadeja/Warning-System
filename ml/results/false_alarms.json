@@ -1,0 +1,7 @@
+{
+  "data_note": "All evaluation results are based on synthetic data and do not represent real-world model performance.",
+  "normal_episodes": 30,
+  "normal_rows": 7200,
+  "rows_predicted_above_low": 21,
+  "fraction_of_normal_rows_predicted_above_low": 0.002916666666666667
+}
