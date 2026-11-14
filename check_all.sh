@@ -80,10 +80,10 @@ check_required_files() {
         fi
     done
 
-    if [[ -f "docs/ml_report.md" ]]; then
-        printf '  PASS: docs/ml_report.md exists\n'
+    if [[ -f "docs/report.md" ]]; then
+        printf '  PASS: docs/report.md exists\n'
     else
-        printf '  WARN: docs/ml_report.md is missing (optional)\n'
+        printf '  WARN: docs/report.md is missing (optional)\n'
         WARNING_COUNT=$((WARNING_COUNT + 1))
     fi
 

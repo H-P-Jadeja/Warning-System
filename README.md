@@ -52,7 +52,7 @@ The pinned Python dependencies in `requirements.txt` are:
 - requests 2.34.2 for optional Telegram delivery.
 - matplotlib 3.10.8 for evaluation plots.
 
-The repository does not pin a Python interpreter version.
+Python 3.11 or newer is required; the project was developed and tested on Python 3.12.
 
 ## Architecture
 
