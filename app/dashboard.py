@@ -8,10 +8,11 @@ import streamlit as st
 
 STUBS_USED = []
 try:
-    from ml.predict import predict_risk
+    from ml.predict import LEAD_TIME_HOURS, predict_risk
 except ImportError:
     from app.stubs import predict_risk
     STUBS_USED.append("predict_risk")
+    LEAD_TIME_HOURS = {"LOW": None, "MEDIUM": 36, "HIGH": 18, "CRITICAL": 6}
 
 try:
     from ml.simulator import simulate_episode
@@ -27,7 +28,7 @@ except ImportError:
 
 USING = "real ML package" if not STUBS_USED else f"STUBS ({', '.join(STUBS_USED)} unavailable)"
 
-from app import alerts, db
+from app import alerts, database_pages, db
 
 LEVELS = ["LOW", "MEDIUM", "HIGH", "CRITICAL"]
 LAKE = (27.92, 88.18)
@@ -70,8 +71,9 @@ def handle_alert(ctx, h, res, reading, results):
         alert_res = res.copy()
         alert_res["risk_level"] = LEVELS[lvl]
         alert_res["level_index"] = lvl
-        alert_res["estimated_lead_time_hrs"] = [None, 36, 18, 6][lvl]
-        status = alerts.raise_alert(reading, alert_res)
+        alert_res["estimated_lead_time_hrs"] = LEAD_TIME_HOURS[LEVELS[lvl]]
+        episode = (*ctx, int(reading["hour"])) if not STUBS_USED else None
+        status = alerts.raise_alert(reading, alert_res, episode=episode)
         state = {"ctx": ctx, "level": lvl, "hour": h}
     elif lvl < state["level"]:
         state["level"] = lvl
@@ -116,7 +118,13 @@ def render_state(df, results, h, ctx):
 
 # ---------------- sidebar ----------------
 st.sidebar.title("🏔️ GLOF EWS")
-page = st.sidebar.radio("Page", ["Overview", "Live Monitor", "Lake Growth", "Alerts Log", "Model Performance"])
+page = st.sidebar.radio("Page", [
+    "Overview", "Live Monitor", "Lake Growth", "Alerts Log", "Model Performance",
+    "Recipients", "Query Lab", "Database",
+])
+db_backend = db.backend_name()
+using_postgres = db_backend == "PostgreSQL"
+st.sidebar.caption(f"Database: {db_backend}")
 st.sidebar.caption(f"Backend: {USING}")
 if STUBS_USED:
     st.sidebar.warning("STUB MODE - outputs are fake, not model predictions")
@@ -151,6 +159,11 @@ elif page == "Live Monitor":
     seed = c2.number_input("Random seed", 0, 9999, 7)
     scenario = "glof" if scen_label.startswith("GLOF") else "normal"
     df, results = load_episode(scenario, int(seed))
+    if using_postgres and not STUBS_USED:
+        try:
+            db.persist_episode(scenario, int(seed), df, results)
+        except Exception:
+            st.warning("Could not save this episode to PostgreSQL. The monitor can continue.")
     n = len(df)
     ctx = (scenario, int(seed))
     hour = st.slider("Current hour", 0, n - 1, n // 2, key=f"hour_{scenario}_{seed}")
@@ -169,7 +182,14 @@ elif page == "Live Monitor":
 
 elif page == "Lake Growth":
     st.title("Lake Growth - South Lhonak")
-    ser = get_lake_area_series()
+    ser = None
+    if using_postgres:
+        try:
+            ser = db.get_lake_area()
+        except Exception:
+            st.warning("Could not read PostgreSQL lake observations. Showing the published CSV.")
+    if ser is None or ser.empty:
+        ser = get_lake_area_series()
     st.line_chart(ser.set_index("date")["area_km2"])
     st.caption("Data source: " + ", ".join(sorted(ser["source"].astype(str).unique())))
     st.dataframe(ser, use_container_width=True)
@@ -190,6 +210,11 @@ elif page == "Alerts Log":
         st.write("No alerts raised yet. Run a GLOF scenario in Live Monitor.")
     else:
         st.dataframe(log, use_container_width=True)
+    if using_postgres:
+        try:
+            database_pages.alert_details(LEVELS)
+        except Exception:
+            st.warning("PostgreSQL alert details are temporarily unavailable.")
 
 elif page == "Model Performance":
     st.title("Model Performance")
@@ -219,3 +244,16 @@ elif page == "Model Performance":
         p = os.path.join(RESULTS, f)
         if os.path.exists(p):
             st.image(p, caption=f, use_container_width=True)
+
+
+elif page in {"Recipients", "Query Lab", "Database"}:
+    if not using_postgres:
+        st.title(page)
+        st.info("PostgreSQL not configured. Set DATABASE_URL and run the database setup.")
+    else:
+        try:
+            {"Recipients": database_pages.recipients,
+             "Query Lab": database_pages.query_lab,
+             "Database": database_pages.database}[page]()
+        except Exception:
+            st.warning("PostgreSQL could not complete this operation.")

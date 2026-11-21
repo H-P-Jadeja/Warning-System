@@ -61,11 +61,11 @@ def build_message(reading, res):
     return "\n".join(lines)
 
 
-def raise_alert(reading, res):
+def raise_alert(reading, res, *, episode=None):
     from app import db
 
     msg = build_message(reading, res)
     status = send_telegram(msg)
     db.log_alert(reading.get("lake_id", "SL001"), reading.get("timestamp", ""),
-                 res["risk_level"], res["risk_score"], msg, status)
+                 res["risk_level"], res["risk_score"], msg, status, **({"episode": episode} if episode is not None else {}))
     return status
