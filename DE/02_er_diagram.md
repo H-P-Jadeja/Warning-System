@@ -1,6 +1,20 @@
 # Entity relationship diagram
 
-Open the [rendered SVG](02_er_diagram.svg) for the full-size diagram. It shows the logical model. The view and import ledger are described in [the schema notes](04_schema.md). The SQL schema defines all attributes and constraints.
+![GLOF Early Warning System ER diagram](02_er_diagram.png)
+
+Open the [full-size SVG](02_er_diagram.svg) to zoom without losing sharpness. A [dark version](02_er_diagram_dark.svg) is also available for presentations ([PNG](02_er_diagram_dark.png)). The diagram shows the logical model. The view and import ledger are described in [the schema notes](04_schema.md). The SQL schema defines all attributes and constraints.
+
+## Reading the diagram
+
+- Tables are colour coded by role: geography and monitoring, sensing and simulation, ML prediction, reference lookup, and alerting and notification.
+- `sensor_readings` and `predictions` have a one-to-one relationship (`predictions.reading_id` is unique).
+- `alerts` and `recipients` have a many-to-many relationship, resolved by the junction table `alert_notifications`.
+- `alerts.prediction_id` is optional, so manual alerts and retained historical alerts can exist without a prediction.
+- Every other relationship is one-to-many.
+
+## Mermaid source
+
+The Mermaid block below is the editable text version of the same model. The images above are the presentation artwork.
 
 ```mermaid
 erDiagram
@@ -122,5 +136,3 @@ erDiagram
         text note
     }
 ```
-
-Alerts and recipients have a many-to-many relationship through `alert_notifications`. Prediction references are optional so manual alerts and retained historical alerts can exist independently. To export an image with Mermaid CLI, extract the fenced source with `sed -n '/^```mermaid$/,/^```$/p' DE/02_er_diagram.md | sed '1d;$d' > /tmp/warning-er.mmd`, then run `mmdc -i /tmp/warning-er.mmd -o DE/02_er_diagram.svg`.
