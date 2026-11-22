@@ -1,5 +1,7 @@
 # PostgreSQL data engineering submission
 
+Demo video: *(link will be added)*
+
 Run from the repository root with the project's Python environment active. The PostgreSQL driver was installed and tested on Python 3.14.
 
 1. Install the pinned dependencies with `python -m pip install -r requirements.txt`.

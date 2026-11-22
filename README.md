@@ -2,13 +2,15 @@
 
 A software prototype for exploring a Glacial Lake Outburst Flood (GLOF) early warning workflow, using **South Lhonak Lake, Sikkim** as its case study. The repository includes a synthetic sensor simulator and trained classifier, published approximate lake-area observations, a Streamlit dashboard, alert logging, and evaluation and contract-checking tools.
 
+Data engineering (PostgreSQL) documentation: see [DE/README.md](DE/README.md).
+
 > **Project status:** The end-to-end prototype is implemented for simulated sensor episodes. The model, alert persistence study, and lake-area inputs are not validated against operational sensor data. The lake-area CSV contains approximate published values; this project has not computed a Sentinel-2 NDWI series.
 
 ## Project overview
 
 A GLOF can occur when a natural moraine or ice dam fails and releases lake water downstream. This project explores a software prototype that uses lake and dam indicators to estimate risk and present information useful for preparedness. The handbook identifies South Lhonak Lake and its October 2023 outburst as the case study.
 
-The dashboard can display synthetic episode results and approximate published lake-area observations. It can log alerts to SQLite and optionally send them through Telegram when configured. It does not connect to field sensors or provide operational emergency warnings.
+The dashboard can display synthetic episode results and approximate published lake-area observations. It logs alerts to PostgreSQL when `DATABASE_URL` is set (see `DE/README.md`), falls back to a local SQLite log otherwise, and optionally sends them through Telegram when configured. It does not connect to field sensors or provide operational emergency warnings.
 
 ## Objectives
 
@@ -32,7 +34,7 @@ These objectives come from the project handbook. The sections below distinguish 
 - `ml/alert_rule_study.py` compares alert persistence windows using the same held-out model predictions and writes `alert_persistence.csv` and `alert_persistence.json`.
 - `ml/lake_area.py` loads `data/lake_area_south_lhonak.csv` for the dashboard. The CSV contains five approximate published values from NRSC/ISRO radar maps and secondary Planet Labs reporting. They were **not computed by this project from Sentinel-2 NDWI**. See [data/README.md](data/README.md) for source and comparison limitations.
 - `app/dashboard.py` provides the Streamlit pages **Overview**, **Live Monitor**, **Lake Growth**, **Alerts Log**, and **Model Performance**. It uses `app/stubs.py` as a fallback for unavailable ML modules and displays a **STUB MODE - outputs are fake, not model predictions** sidebar warning when any stub is used.
-- `app/alerts.py` applies two-consecutive-hour persistence by default (`PERSISTENCE_HOURS = 2`, using `effective_level`) before raising dashboard alerts. The underlying alert-repeat rule sends an alert when risk rises above the remembered alerted level, or repeats HIGH/CRITICAL after 12 hours. `app/db.py` logs alert records in SQLite at `app/alerts.db`. Optional Telegram delivery uses `TG_TOKEN` and `TG_CHAT`.
+- `app/alerts.py` applies two-consecutive-hour persistence by default (`PERSISTENCE_HOURS = 2`, using `effective_level`) before raising dashboard alerts. The underlying alert-repeat rule sends an alert when risk rises above the remembered alerted level, or repeats HIGH/CRITICAL after 12 hours. `app/db.py` logs alert records in PostgreSQL when `DATABASE_URL` is set and the schema exists, and otherwise in SQLite at `app/alerts.db`. Optional Telegram delivery uses `TG_TOKEN` and `TG_CHAT`.
 - `ml/check_contract.py` checks the real prediction interface and dashboard stub. `app/check_alert_logic.py` checks alert persistence and repeat behavior without launching Streamlit or accessing the database.
 
 ### Planned
@@ -85,18 +87,22 @@ Sentinel-2 NDWI extraction (planned; untested skeleton only)
 Warning-System/
 ├── README.md
 ├── .gitignore
+├── .env.example                 # Placeholder DATABASE_URL
 ├── requirements.txt
 ├── app/
 │   ├── __init__.py
 │   ├── alerts.py                # Persistence rule, alert formatting, optional Telegram
 │   ├── check_alert_logic.py     # Pure alert-logic check script
 │   ├── dashboard.py             # Streamlit dashboard and its five pages
-│   ├── db.py                    # SQLite alert logging and history access
+│   ├── database_pages.py        # Recipients, Query Lab and Database pages
+│   ├── db.py                    # PostgreSQL alert storage (SQLite fallback)
+│   ├── postgres.py              # PostgreSQL connection and storage
 │   └── stubs.py                 # Dashboard fallback functions
 ├── data/
 │   ├── README.md                # Sources and limitations for the area observations
 │   ├── extract_lake_area.py     # Untested Earth Engine NDWI skeleton
 │   └── lake_area_south_lhonak.csv # Approximate published values; not project-derived NDWI
+├── DE/                          # Data engineering submission: schema, queries, documentation
 ├── docs/
 │   └── .gitkeep                 # Reserved for final project documentation
 └── ml/

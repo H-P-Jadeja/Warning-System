@@ -13,7 +13,7 @@ streamlit run app/dashboard.py
 
 Check the sidebar's **Backend:** caption. For the model-backed demo, it should say `real ML package` and should not show the STUB MODE warning. The chosen GLOF and normal episodes both use seed `7`, which is the dashboard's default and is within the `Random seed` input's offered range.
 
-If `Alerts Log` already contains old local demo records and you want a clean demonstration, use **Clear log** before starting. This removes rows from the local SQLite alert history.
+If `Alerts Log` already contains old local demo records and you want a clean demonstration, use **Clear log** before starting. This removes rows from the alert history (PostgreSQL when `DATABASE_URL` is set, otherwise local SQLite).
 
 ## Expected synthetic episode facts
 
@@ -87,9 +87,19 @@ Save screenshots in `docs/screenshots/` using these target names. The folder sta
 - **The sidebar shows STUB MODE:** one or more ML imports fell back to `app/stubs.py`. Those outputs are fake and not model predictions. Check that the project dependencies and ML modules are available, then restart the dashboard; do not present stub output as model-backed results.
 - **`ml/model.pkl` is missing:** the real predictor loads that bundle from the `ml/` directory. Restore the tracked model bundle before the demo. If it cannot be restored, do not claim to be demonstrating real-model predictions.
 - **The contract checker reports a scikit-learn version warning:** `requirements.txt` pins scikit-learn to `1.8.0`. Install the pinned requirements in the active environment and rerun the checks before presenting the saved-model results.
-- **Telegram is not configured:** without both `TG_TOKEN` and `TG_CHAT`, Telegram delivery returns a preview status. Dashboard alert rows are still written to the local SQLite log; do not claim that a Telegram message was sent.
+- **Telegram is not configured:** without both `TG_TOKEN` and `TG_CHAT`, Telegram delivery returns a preview status. Dashboard alert rows are still written to the alert log (PostgreSQL or local SQLite); do not claim that a Telegram message was sent.
 - **Model Performance summary cards look empty or show zeros:** the page currently requests keys such as `best_model` and top-level macro metrics, while `ml/evaluate.py` writes a different JSON structure. Refer to `ml/results/metrics.json` and the report for the recorded metrics.
 
 ## Honesty note for presenters
 
 Say aloud: “This is a prototype using synthetic sensor data. It is not an operational warning system. The lake-area values are approximate published observations, not values calculated by this project from Sentinel-2 NDWI.”
+
+## Database pages (PostgreSQL mode)
+
+With `DATABASE_URL` set and the PostgreSQL schema available, the sidebar shows **Database: PostgreSQL** and the three database pages are active.
+
+- **Recipients** lets you add, edit and delete notification recipients.
+- **Query Lab** provides a read-only view of the 12 project queries.
+- **Database** shows table row counts.
+
+Without `DATABASE_URL`, these pages show **PostgreSQL not configured** and the original dashboard workflow continues with SQLite.

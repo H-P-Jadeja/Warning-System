@@ -23,7 +23,7 @@ After UPDATE and SELECT:
 After DELETE and SELECT, matching rows: 0
 ```
 
-Follow the [screenshot checklist](screenshots/README.md) to capture the UI evidence.
+UI evidence for these operations is shown in the project demo video: *(link will be added)*.
 
 ## Verification
 
