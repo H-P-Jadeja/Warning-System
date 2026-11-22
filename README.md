@@ -2,6 +2,8 @@
 
 A software prototype of an early warning workflow for Glacial Lake Outburst Floods (GLOFs), using **South Lhonak Lake, Sikkim** as its case study.
 
+Data engineering (PostgreSQL) documentation: see [DE/README.md](DE/README.md).
+
 ## Live demo
 
 **Open the dashboard:** https://warning-system-pc63ffcgfdj5jhm2gfe2an.streamlit.app/
@@ -44,7 +46,7 @@ The dashboard sends alerts as push notifications through [ntfy](https://ntfy.sh)
 
 A GLOF can occur when a natural moraine or ice dam fails and releases lake water downstream. This project explores a software prototype that uses lake and dam indicators to estimate risk and present information useful for preparedness. The case study is South Lhonak Lake and its October 2023 outburst.
 
-The dashboard displays synthetic episode results and approximate published lake-area observations. It logs alerts to SQLite and can deliver them as ntfy push notifications, Telegram messages or Discord messages when configured. It does not connect to field sensors.
+The dashboard displays synthetic episode results and approximate published lake-area observations. It logs alerts to PostgreSQL when `DATABASE_URL` is set and the schema is available (see `DE/README.md`), falls back to a local SQLite log otherwise, and can deliver them as ntfy push notifications, Telegram messages or Discord messages when configured. It does not connect to field sensors.
 
 ## Objectives
 
@@ -66,7 +68,7 @@ The dashboard displays synthetic episode results and approximate published lake-
 - `ml/alert_rule_study.py` compares alert persistence windows using the same held-out model predictions and writes `alert_persistence.csv` and `alert_persistence.json`.
 - `ml/lake_area.py` loads `data/lake_area_south_lhonak.csv` for the dashboard. The CSV contains five approximate published values from NRSC/ISRO radar maps and secondary Planet Labs reporting. They were **not computed by this project from Sentinel-2 NDWI**. See [data/README.md](data/README.md) for source and comparison limitations.
 - `app/dashboard.py` provides the Streamlit pages **Overview**, **Live Monitor**, **Lake Growth**, **Alerts Log**, and **Model Performance**. It uses `app/stubs.py` as a fallback for unavailable ML modules and displays a **STUB MODE - outputs are fake, not model predictions** sidebar warning when any stub is used.
-- `app/alerts.py` applies two-consecutive-hour persistence by default (`PERSISTENCE_HOURS = 2`, using `effective_level`) before raising dashboard alerts. The alert-repeat rule sends an alert when risk rises above the remembered alerted level, or repeats HIGH/CRITICAL after 12 hours. `app/db.py` logs alert records in SQLite at `app/alerts.db`. Delivery channels are ntfy push (`NTFY_TOPIC`), Telegram (`TG_TOKEN`, `TG_CHAT`) and Discord (`DISCORD_WEBHOOK`); channels that are not configured are skipped and reported as "preview only".
+- `app/alerts.py` applies two-consecutive-hour persistence by default (`PERSISTENCE_HOURS = 2`, using `effective_level`) before raising dashboard alerts. The alert-repeat rule sends an alert when risk rises above the remembered alerted level, or repeats HIGH/CRITICAL after 12 hours. `app/db.py` logs alert records in PostgreSQL when `DATABASE_URL` is set and the schema exists, and otherwise in SQLite at `app/alerts.db`. Delivery channels are ntfy push (`NTFY_TOPIC`), Telegram (`TG_TOKEN`, `TG_CHAT`) and Discord (`DISCORD_WEBHOOK`); channels that are not configured are skipped and reported as "preview only".
 - `ml/check_contract.py` checks the real prediction interface and dashboard stub. `app/check_alert_logic.py` checks alert persistence and repeat behavior without launching Streamlit or accessing the database.
 
 ### Planned
@@ -121,19 +123,23 @@ Sentinel-2 NDWI extraction (planned; untested skeleton only)
 Warning-System/
 ├── README.md
 ├── .gitignore
+├── .env.example                 # Placeholder DATABASE_URL
 ├── check_all.sh                 # Runs all repository checks
 ├── requirements.txt
 ├── app/
 │   ├── __init__.py
 │   ├── alerts.py                # Persistence rule, alert formatting, ntfy / Telegram / Discord delivery
 │   ├── check_alert_logic.py     # Pure alert-logic check script
-│   ├── dashboard.py             # Streamlit dashboard and its five pages
-│   ├── db.py                    # SQLite alert logging and history access
+│   ├── dashboard.py             # Streamlit dashboard and its pages
+│   ├── database_pages.py        # Recipients, Query Lab and Database pages
+│   ├── db.py                    # PostgreSQL alert storage (SQLite fallback)
+│   ├── postgres.py              # PostgreSQL connection and storage
 │   └── stubs.py                 # Dashboard fallback functions
 ├── data/
 │   ├── README.md                # Sources and limitations for the area observations
 │   ├── extract_lake_area.py     # Untested Earth Engine NDWI skeleton
 │   └── lake_area_south_lhonak.csv # Approximate published values; not project-derived NDWI
+├── DE/                          # Data engineering submission: schema, queries, documentation
 ├── docs/
 │   ├── report.md                # Final merged project report
 │   ├── GLOF_EWS_Presentation.pptx
@@ -173,7 +179,7 @@ python -m pip install -r requirements.txt
 python -m streamlit run app/dashboard.py
 ```
 
-The dashboard opens at http://localhost:8501. It has five pages: **Overview** (map and current level), **Live Monitor** (scenario, seed, play button, sensor charts, risk timeline, key drivers, lead time), **Lake Growth**, **Alerts Log** and **Model Performance**.
+The dashboard opens at http://localhost:8501. Its core pages are **Overview** (map and current level), **Live Monitor** (scenario, seed, play button, sensor charts, risk timeline, key drivers, lead time), **Lake Growth**, **Alerts Log** and **Model Performance**. The **Recipients**, **Query Lab** and **Database** pages are available when PostgreSQL is configured.
 
 Train or regenerate the model, evaluate it, and run the alert-persistence study (optional, the trained model is already included):
 
@@ -258,7 +264,7 @@ Never commit tokens, webhook URLs or passwords to the repository. ntfy topics ar
 | HIGH | Orange | Alert authorities, prepare evacuation of downstream villages |
 | CRITICAL | Red | Evacuate immediately, notify all downstream settlements and infrastructure |
 
-An alert is raised when the effective level (the minimum predicted level over the last 2 hours) rises above the last alerted level, and it repeats every 12 hours while the level stays HIGH or CRITICAL. All alerts are stored in `app/alerts.db` and shown on the Alerts Log page.
+An alert is raised when the effective level (the minimum predicted level over the last 2 hours) rises above the last alerted level, and it repeats every 12 hours while the level stays HIGH or CRITICAL. All alerts are stored in PostgreSQL when available, or in `app/alerts.db` in SQLite fallback mode, and shown on the Alerts Log page.
 
 ## Evaluation results (synthetic data)
 

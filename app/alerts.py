@@ -83,11 +83,12 @@ def build_message(reading, res):
     return "\n".join(lines)
 
 
-def raise_alert(reading, res):
+def raise_alert(reading, res, *, episode=None):
     msg = build_message(reading, res)
     parts = [send_telegram(msg), send_ntfy(msg), send_discord(msg)]
     used = [p for p in parts if "not configured" not in p and "Preview only" not in p]
     status = " | ".join(used) if used else "Preview only (no channel configured)"
     db.log_alert(reading.get("lake_id", "SL001"), reading.get("timestamp", ""),
-                 res["risk_level"], res["risk_score"], msg, status)
+                 res["risk_level"], res["risk_score"], msg, status,
+                 **({"episode": episode} if episode is not None else {}))
     return status
