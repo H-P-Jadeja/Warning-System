@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GLOF-Watch 3D flood simulator</title>
+  <style>
+    :root { --ink:#12262e; --panel:rgba(248,251,252,.93); --line:#cddbe0; --melt:#1b7f96; --muted:#5d7480; }
+    html, body { margin:0; height:100%; overflow:hidden; font:14px/1.45 "Segoe UI", system-ui, sans-serif; color:var(--ink); }
+    #c { position:fixed; inset:0; width:100%; height:100%; display:block; }
+    .panel { position:fixed; background:var(--panel); border:1px solid var(--line); border-radius:8px; padding:.7rem .9rem; }
+    #hud { top:12px; left:12px; width:290px; }
+    #help { bottom:12px; left:12px; max-width:330px; color:var(--muted); font-size:13px; }
+    #villages { top:12px; right:12px; width:270px; }
+    h1 { font:600 1.05rem Georgia, serif; margin:0 0 .4rem; }
+    h2 { font:600 .95rem Georgia, serif; margin:0 0 .3rem; }
+    select, button, input { font:inherit; }
+    select { width:100%; margin-bottom:.5rem; }
+    button { background:var(--melt); color:#fff; border:0; border-radius:6px; padding:.4rem .7rem; cursor:pointer; margin:0 .3rem .3rem 0; }
+    button:focus-visible, select:focus-visible, input:focus-visible { outline:3px solid #d9772b; outline-offset:2px; }
+    #score { font:600 2rem Georgia, serif; }
+    #level { display:inline-block; padding:.1rem .6rem; border-radius:99px; color:#fff; margin-left:.4rem; background:#4e9f6b; }
+    #villages ul { list-style:none; margin:0; padding:0; }
+    #villages li { display:flex; justify-content:space-between; padding:.25rem 0; border-bottom:1px solid var(--line); }
+    .hit { color:#b3261e; font-weight:600; }
+    small { color:var(--muted); }
+  </style>
+</head>
+<body>
+  <canvas id="c" aria-label="3D glacial lake and downstream valley"></canvas>
+  <div id="hud" class="panel">
+    <h1>GLOF-Watch 3D</h1>
+    <label for="lake" class="sr">Lake</label>
+    <select id="lake"></select>
+    <div><span id="score">0</span><span id="level">Low</span></div>
+    <div id="lead">No precursors detected</div>
+    <div id="mode"><small>Connecting…</small></div>
+    <p>
+      <button id="trigger">Trigger outburst</button>
+      <button id="reset">Reset</button>
+    </p>
+    <label for="speed">Flood speed <small id="speedv">1.0×</small></label>
+    <input id="speed" type="range" min="0.4" max="2.5" step="0.1" value="1" style="width:100%">
+    <p><small><a href="/">Back to 2D dashboard</a></small></p>
+  </div>
+  <div id="villages" class="panel">
+    <h2>Downstream villages</h2>
+    <ul id="vlist"></ul>
+    <small>Estimated arrival uses an illustrative scale: 1 unit = 250 m, flood front 30 km/h.</small>
+  </div>
+  <div id="help" class="panel">
+    Drag to orbit, scroll to zoom, click a house for details.<br>
+    Keys: <b>Space</b> trigger · <b>R</b> reset · <b>1</b> lake · <b>2</b> valley · <b>3</b> follow flood
+  </div>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <script src="scene.js"></script>
+</body>
+</html>
